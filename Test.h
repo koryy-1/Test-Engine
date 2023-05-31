@@ -5,20 +5,18 @@
 class Test
 {
 public:
-	Test(Engine *Engine1);
+	Test(Engine *engine);
+	~Test();
 	
-	Engine *Engine1;
+	void RunHeatingTest();
+	void RunMaximumPowerTest();
 
+private:
+	Engine* engine;
 	float MaxEnginePower;
 	float V_atMaxEnginePower;
 
-	void RunHeatingTest();
-	void RunMaximumPowerTest();
 	bool StopHeatingTest();
 	bool StopMaximumPowerTest();
-
-private:
-	std::function<bool()> stopHeatingCondition;
-	std::function<bool()> stopMaximumPowerCondition;
 };
 

@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include "Engine.h"
 #include "Test.h"
+#include "IOHandler.h"
 
 using namespace std;
 
@@ -16,35 +17,28 @@ int main()
     std::cout << std::endl;
 
 
-    float T_environment;
-    cout << "enter environment temperature in °C" << endl;
-    cout << ">";
-    cin >> T_environment;
-    std::cout << std::endl;
+    float T_environment = IOHandler::readEnvironmentTemperature();
 
-    int choice;
-    cout << "time to choose test:" << endl;
-    cout << "1 - run heating test" << endl;
-    cout << "2 - run maximum power test" << endl;
-    cout << ">";
-    cin >> choice;
-    std::cout << std::endl;
+    int choice = IOHandler::chooseTestOption();
 
-    Engine* Engine1 = new Engine(T_environment);
+    std::unique_ptr<Engine> engine = std::make_unique<Engine>(T_environment);
 
-    Test* Test1 = new Test(Engine1);
+    std::unique_ptr<Test> test = std::make_unique<Test>(engine.get());
 
     if (choice == 1)
     {
-        Test1->RunHeatingTest();
+        test->RunHeatingTest();
+    }
+    else if (choice == 2)
+    {
+        test->RunMaximumPowerTest();
     }
     else
     {
-        Test1->RunMaximumPowerTest();
+        std::cout << "Invalid choice. Exiting..." << std::endl;
     }
 
-    system("pause");
-    delete Test1;
-    delete Engine1;
+    IOHandler::waitForEnter();
+
     return 0;
 }

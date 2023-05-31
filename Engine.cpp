@@ -1,12 +1,11 @@
 #include "Engine.h"
 #include <cmath>
 #include <iostream>
-#include <functional>
 
-Engine::Engine(float &T_environment) {
+Engine::Engine(float T_environment) {
 	this->I = 10;
-	this->M = new int[6] { 20, 75, 100, 105, 75, 0 };
-	this->V = new int[6] { 0, 75, 150, 200, 250, 300 };
+	this->M = { 20, 75, 100, 105, 75, 0 };
+	this->V = { 0, 75, 150, 200, 250, 300 };
 
 	this->cur_M = M[0];
 	this->cur_V = V[0];
@@ -22,22 +21,26 @@ Engine::Engine(float &T_environment) {
 	this->Hv = 0.0001f;
 	this->C = 0.1f;
 
-	this->EnignePower = 0.0f;
+	this->EnginePower = 0.0f;
+
+	// контролировать погрешность измерений можно с помощью значения шага
+	this->timeStep = 0.1f;
 
 	// время в течение которого работает двигатель
-	this->t = 0.0f;
-	// контролировать погрешность измерений можно с помощью значения шага
-	this->increment = 0.1f;
+	this->time = 0.0f;
 }
 
-void Engine::start(std::function<bool()> EndOfRunCondition)
+Engine::~Engine()
 {
-	std::cout << "Cur_V" << "\t\t\t" << "Cur_M" << "\t\t"
-		<< "accel" << "\t\t" << "temp engine" << "\t\t"
-		<< "enigne power" << "\t\t" << "time" << std::endl;
+	std::vector<int>().swap(M);
+	std::vector<int>().swap(V);
+}
 
+std::vector<std::vector<float>> Engine::start(std::function<bool()> EndOfRunCondition)
+{
 	int index1 = 0;
 	int index2 = 0;
+	std::vector<std::vector<float>> values;
 
 	for (size_t i = 0; i < 5; i++)
 	{
@@ -51,33 +54,58 @@ void Engine::start(std::function<bool()> EndOfRunCondition)
 
 		do
 		{
-			std::cout << cur_V << "\t\t\t" << cur_M << "\t\t"
-				<< acceleration << "\t\t" << T_engine << "\t\t"
-				<< EnignePower << "\t\t" << t << std::endl;
+			values.push_back({ cur_V, cur_M, acceleration, T_engine, EnginePower, time });
 
-			T_engine += calc_delta_T_engine() * increment;
+			T_engine += calc_delta_T_engine() * timeStep;
 
-			EnignePower = CalcEnginePower();
+			EnginePower = CalcEnginePower();
 
-			cur_V += acceleration * increment;
+			cur_V += acceleration * timeStep;
 
 			// Вычисляем коэффициент для линейной интерполяции
 			float alpha = (cur_V - V1) / (V2 - V1);
 
-			// Вычисляем значение крутящего момента с использованием интерполяции
+			// Вычисляем значение крутящего момента
+			// с использованием интерполяции
 			cur_M = M1 + alpha * (M2 - M1);
 
 			// обновляем значение ускорения
 			acceleration = cur_M / I;
 
-			t += increment;
+			time += timeStep;
 
 			if (EndOfRunCondition())
 			{
-				return;
+				return values;
 			}
 		} while (cur_V + 0.0005f < V[i + 1]);
 	}
+	return values;
+}
+
+bool Engine::isOverheated()
+{
+	return T_engine >= T_overheating;
+}
+
+float Engine::getEnginePower()
+{
+	return EnginePower;
+}
+
+float Engine::getCurrentVelocity()
+{
+	return cur_V;
+}
+
+bool Engine::isAccelerationLow()
+{
+	return acceleration < 0.005f;
+}
+
+float Engine::getRunningTime()
+{
+	return time;
 }
 
 float Engine::calc_V_heating()

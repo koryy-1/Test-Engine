@@ -1,53 +1,55 @@
 #include "Test.h"
 #include <iostream>
+#include "IOHandler.h"
 
-Test::Test(Engine* Engine1)
+Test::Test(Engine *engine)
 {
-	this->Engine1 = Engine1;
+	this->engine = engine;
+	this->MaxEnginePower = 0.0f;
+	this->V_atMaxEnginePower = 0.0f;
+}
 
-	stopHeatingCondition = std::bind(&Test::StopHeatingTest, this);
-	stopMaximumPowerCondition = std::bind(&Test::StopMaximumPowerTest, this);
+Test::~Test()
+{
 }
 
 void Test::RunHeatingTest()
 {
-	
-	std::function<bool()> stopCondition = [this]() { return StopHeatingTest(); };
-	this->Engine1->start(stopCondition);
-
 	std::cout << std::endl;
-	std::cout << "Stoping test, engine running time is " 
-		<< this->Engine1->t << " seconds" << std::endl;
+	std::cout << "Running heating test" << std::endl;
+	std::cout << std::endl;
+
+	std::function<bool()> stopCondition = [this]() { return StopHeatingTest(); };
+	auto values = engine->start(stopCondition);
+
+	IOHandler::printParameters(values);
+	IOHandler::printEngineRunningTime(engine->getRunningTime());
 }
 
 void Test::RunMaximumPowerTest()
 {
-	std::function<bool()> stopCondition = [this]() { return StopMaximumPowerTest(); };
-	this->Engine1->start(stopCondition);
-
 	std::cout << std::endl;
-	std::cout << "Stoping test, max enigne power is " << MaxEnginePower << " kW, at a crankshaft speed of " << V_atMaxEnginePower << " radians per second" << std::endl;
+	std::cout << "Running maximum power test" << std::endl;
+	std::cout << std::endl;
+
+	std::function<bool()> stopCondition = [this]() { return StopMaximumPowerTest(); };
+	auto values = engine->start(stopCondition);
+
+	IOHandler::printParameters(values);
+	IOHandler::printMaximumPower(MaxEnginePower, V_atMaxEnginePower);
 }
 
 bool Test::StopHeatingTest()
 {
-	if (this->Engine1->T_engine >= this->Engine1->T_overheating)
-	{
-		return true;
-	}
-	return false;
+	return engine->isOverheated();
 }
 
 bool Test::StopMaximumPowerTest()
 {
-	if (MaxEnginePower < this->Engine1->EnignePower)
+	if (MaxEnginePower < engine->getEnginePower())
 	{
-		MaxEnginePower = this->Engine1->EnignePower;
-		V_atMaxEnginePower = this->Engine1->cur_V;
+		MaxEnginePower = engine->getEnginePower();
+		V_atMaxEnginePower = engine->getCurrentVelocity();
 	}
-	if (this->Engine1->acceleration < 0.005)
-	{
-		return true;
-	}
-	return false;
+	return engine->isAccelerationLow();
 }
